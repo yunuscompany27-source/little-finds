@@ -36,12 +36,17 @@ $('o-prod').onchange=total;$('o-qty').oninput=total;
 $('o-send').onclick=async function(){
   var n=$('o-name').value.trim(),w=$('o-wa').value.trim(),a=$('o-addr').value.trim();
   if(!$('o-prod').value||!n||!w||!a){toast('Lengkapi nama, nomor WhatsApp, dan alamat.');return}
+  var pf=$('o-proof').files[0];
+  if(pf&&!/^image\//.test(pf.type)){toast('Bukti pembayaran harus berupa gambar.');return}
   $('o-send').disabled=true;
   var r=await sb.rpc('create_order',{p_product:+$('o-prod').value,p_qty:Math.max(1,parseInt($('o-qty').value)||1),p_name:n,p_wa:w,p_addr:a,p_pay:$('o-pay').value});
   $('o-send').disabled=false;
   if(r.error){toast('Pesanan gagal dikirim. Coba lagi.');return}
   $('o-name').value=$('o-wa').value=$('o-addr').value='';
-  $('t-code').value=r.data;toast('Pesanan terkirim. Kodemu: '+r.data);
+  var msg='Pesanan terkirim. Kodemu: '+r.data;
+  if(pf){try{await sendProof(r.data,pf);msg+='. Bukti pembayaran terkirim.'}catch(err){msg+='. Bukti gagal dikirim, unggah ulang di Cek pesanan.'}}
+  $('o-proof').value='';
+  $('t-code').value=r.data;toast(msg);
   track();show('lacak');
 };
 
@@ -51,6 +56,13 @@ function shrink(file){return new Promise(function(res,rej){
   img.onload=function(){var m=1400,k=Math.min(1,m/Math.max(img.width,img.height));var c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.toBlob(function(x){x?res(x):rej()},'image/jpeg',0.8)};
   img.onerror=rej;img.src=URL.createObjectURL(file);
 })}
+async function sendProof(code,file){
+  var blob=await shrink(file),path=code+'/'+Date.now()+'.jpg';
+  var u=await sb.storage.from('payment-proofs').upload(path,blob,{contentType:'image/jpeg'});
+  if(u.error)throw u.error;
+  var a=await sb.rpc('attach_proof',{p_code:code,p_path:path});
+  if(a.error)throw a.error;
+}
 async function track(){
   var c=$('t-code').value.trim();if(!c)return;
   var r=await sb.rpc('get_order',{p_code:c});var o=r.data&&r.data[0];
@@ -69,11 +81,7 @@ $('t-out').onclick=async function(e){
   if(!/^image\//.test(f.type)){toast('File harus berupa gambar.');return}
   e.target.disabled=true;
   try{
-    var blob=await shrink(f),path=code+'/'+Date.now()+'.jpg';
-    var u=await sb.storage.from('payment-proofs').upload(path,blob,{contentType:'image/jpeg'});
-    if(u.error)throw u.error;
-    var a=await sb.rpc('attach_proof',{p_code:code,p_path:path});
-    if(a.error)throw a.error;
+    await sendProof(code,f);
     toast('Bukti pembayaran terkirim.');
   }catch(err){toast('Bukti gagal dikirim. Coba lagi.')}
   track();
