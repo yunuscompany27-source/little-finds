@@ -20,7 +20,7 @@ async function loadProducts(){
 }
 function renderCatalog(){
   $('catalog').innerHTML=products.map(function(p){
-    return '<article class="card"><div class="thumb" style="background:'+(HUE[p.type]||'#eee')+'">'+(ICON[p.type]||'🛍️')+'</div><div class="b"><h3>'+esc(p.name)+'</h3><span class="muted">'+esc(p.type)+(p.close_date?' · GO tutup '+p.close_date:'')+'</span><span class="price">'+rp(p.price)+'</span><button class="btn" data-id="'+p.id+'">Pesan</button></div></article>';
+    return '<article class="card"><div class="thumb" style="background:'+(HUE[p.type]||'#eee')+'">'+(p.image?'<a href="'+esc(p.image)+'" target="_blank" rel="noopener" style="display:block;width:100%;height:100%"><img src="'+esc(p.image)+'" alt="'+esc(p.name)+'" loading="lazy"></a>':(ICON[p.type]||'🛍️'))+'</div><div class="b"><h3>'+esc(p.name)+'</h3><span class="muted">'+esc(p.type)+(p.close_date?' · GO tutup '+p.close_date:'')+'</span><span class="price">'+rp(p.price)+'</span><button class="btn" data-id="'+p.id+'">Pesan</button></div></article>';
   }).join('');
   $('catalog').querySelectorAll('button').forEach(function(b){b.onclick=function(){$('o-prod').value=b.dataset.id;total();show('pesan')}});
   $('o-prod').innerHTML=products.map(function(p){return '<option value="'+p.id+'">'+esc(p.name)+' – '+rp(p.price)+'</option>'}).join('');
