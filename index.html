@@ -8,11 +8,12 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap">
 <style>
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
---bg:#F1F1F3;--surface:#fff;--ink:#26272b;--muted:#5f6268;--line:#d6d7db;--thumb:#e4e5e8;--gold:#F2A900;--lotus:#D63FA0;--on-gold:#26272b;--ok:#1f8a5b}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1c1d20;--surface:#26272b;--ink:#ececee;--muted:#9a9da3;--line:#3a3c41;--thumb:#2f3135;--ok:#4fd39a}}
-:root[data-theme="dark"]{--bg:#1c1d20;--surface:#26272b;--ink:#ececee;--muted:#9a9da3;--line:#3a3c41;--thumb:#2f3135;--ok:#4fd39a}
+--bg:#F1F1F3;--surface:#fff;--ink:#26272b;--muted:#5f6268;--line:#d6d7db;--thumb:#e4e5e8;--veil:rgba(241,241,243,.86);--gold:#F2A900;--lotus:#D63FA0;--on-gold:#26272b;--ok:#1f8a5b}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1c1d20;--surface:#26272b;--ink:#ececee;--muted:#9a9da3;--line:#3a3c41;--thumb:#2f3135;--veil:rgba(28,29,32,.8);--ok:#4fd39a}}
+:root[data-theme="dark"]{--bg:#1c1d20;--surface:#26272b;--ink:#ececee;--muted:#9a9da3;--line:#3a3c41;--thumb:#2f3135;--veil:rgba(28,29,32,.8);--ok:#4fd39a}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*:before,*:after{box-sizing:inherit}
+body::before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(var(--veil),var(--veil)),url(bg.jpg) center/cover no-repeat}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:'Prompt',system-ui,sans-serif;line-height:1.55}
 .wrap{max-width:960px;margin:0 auto;padding:0 16px 48px}
 header{padding:28px 0 8px}
@@ -28,7 +29,7 @@ nav button[aria-selected=true]{color:var(--ink);border-color:var(--gold)}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--lotus);outline-offset:2px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
-.thumb{background:var(--thumb);aspect-ratio:1/1;display:grid;place-items:center;font-size:44px;overflow:hidden}
+.thumb{background:var(--thumb)!important;aspect-ratio:1/1;display:grid;place-items:center;font-size:44px;overflow:hidden}
 .thumb img{width:100%;height:100%;object-fit:contain;display:block}
 .card .b{padding:12px 14px 14px;display:flex;flex-direction:column;gap:4px;flex:1}
 .card h3{margin:0;font-size:16px}
