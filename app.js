@@ -16,7 +16,7 @@ document.querySelectorAll('#tabs button').forEach(function(b){b.onclick=function
 async function loadProducts(){
   var r=await sb.from('products').select('*').order('id');
   if(r.error){toast('Produk gagal dimuat. Periksa config.js.');return}
-  products=r.data;renderCatalog();
+  products=r.data;renderCatalog();renderAdminProducts();
 }
 function renderCatalog(){
   $('catalog').innerHTML=products.map(function(p){
@@ -101,15 +101,54 @@ $('a-signin').onclick=async function(){
 };
 $('a-signout').onclick=async function(){await sb.auth.signOut();orders=[];checkAdmin()};
 
+var editId=null;
+function resetForm(){
+  editId=null;
+  ['a-name','a-price','a-close','a-img'].forEach(function(i){$(i).value=''});
+  $('a-type').value='Photocard';$('a-title').textContent='Tambah produk';$('a-add').textContent='Simpan produk';
+  $('a-cancel').hidden=true;$('a-img-note').textContent='';
+}
+$('a-cancel').onclick=resetForm;
 $('a-add').onclick=async function(){
   var n=$('a-name').value.trim(),pr=parseInt($('a-price').value);
   if(!n||!(pr>=0)){toast('Isi nama dan harga produk.');return}
-  var row={name:n,price:pr,type:$('a-type').value,close_date:$('a-close').value||null};
-  var ex=products.filter(function(x){return x.name.toLowerCase()===n.toLowerCase()})[0];
-  var r=ex?await sb.from('products').update(row).eq('id',ex.id):await sb.from('products').insert(row);
-  if(r.error){toast('Produk gagal disimpan. Pastikan kamu login sebagai admin.');return}
-  $('a-name').value=$('a-price').value='';toast('Produk disimpan.');loadProducts();
+  var f=$('a-img').files[0];
+  if(f&&!/^image\//.test(f.type)){toast('Foto harus berupa gambar.');return}
+  $('a-add').disabled=true;
+  try{
+    var row={name:n,price:pr,type:$('a-type').value,close_date:$('a-close').value||null};
+    if(f){
+      var blob=await shrink(f),path=Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.jpg';
+      var u=await sb.storage.from('product-images').upload(path,blob,{contentType:'image/jpeg'});
+      if(u.error)throw u.error;
+      row.image=sb.storage.from('product-images').getPublicUrl(path).data.publicUrl;
+    }
+    var r=editId?await sb.from('products').update(row).eq('id',editId):await sb.from('products').insert(row);
+    if(r.error)throw r.error;
+    toast(editId?'Produk diperbarui.':'Produk ditambahkan.');resetForm();loadProducts();
+  }catch(err){toast('Produk gagal disimpan. Pastikan kamu login sebagai admin.')}
+  $('a-add').disabled=false;
 };
+function renderAdminProducts(){
+  $('a-products').innerHTML=products.map(function(p){
+    return '<tr><td>'+(p.image?'<img class="pthumb" src="'+esc(p.image)+'" alt="">':'')+'</td><td>'+esc(p.name)+'<br><span class="muted">'+esc(p.type)+'</span></td><td>'+rp(p.price)+'</td><td>'+(p.close_date||'-')+'</td><td><button class="btn sm alt" data-edit="'+p.id+'">Edit</button> <button class="btn sm alt danger" data-del="'+p.id+'">Hapus</button></td></tr>';
+  }).join('');
+  $('a-products').querySelectorAll('button[data-edit]').forEach(function(b){b.onclick=function(){
+    var p=products.filter(function(x){return x.id==b.dataset.edit})[0];if(!p)return;
+    editId=p.id;$('a-name').value=p.name;$('a-price').value=p.price;$('a-type').value=p.type;$('a-close').value=p.close_date||'';$('a-img').value='';
+    $('a-title').textContent='Edit produk';$('a-add').textContent='Simpan perubahan';$('a-cancel').hidden=false;
+    $('a-img-note').textContent=p.image?'Kosongkan jika tidak ingin mengganti foto.':'';
+    $('a-name').scrollIntoView({behavior:'smooth',block:'center'});
+  }});
+  $('a-products').querySelectorAll('button[data-del]').forEach(function(b){b.onclick=async function(){
+    var p=products.filter(function(x){return x.id==b.dataset.del})[0];if(!p)return;
+    if(!confirm('Hapus produk “'+p.name+'”? Pesanan yang sudah ada tetap tersimpan.'))return;
+    var r=await sb.from('products').delete().eq('id',p.id);
+    if(r.error){toast('Produk gagal dihapus.');return}
+    if(editId==p.id)resetForm();
+    toast('Produk dihapus.');loadProducts();
+  }});
+}
 async function loadOrders(){
   var r=await sb.from('orders').select('*').order('id',{ascending:false});
   if(r.error){toast('Pesanan gagal dimuat.');return}
@@ -118,8 +157,8 @@ async function loadOrders(){
 function renderAdmin(){
   $('a-empty').hidden=orders.length>0;
   $('a-orders').innerHTML=orders.map(function(o){
-    var act=o.stage===0?'<button class="btn sm" data-id="'+o.id+'">Verifikasi bayar</button>':(o.stage<4?'<button class="btn sm alt" data-id="'+o.id+'">Lanjut: '+STAGES[o.stage+1]+'</button>':'');
-    return '<tr><td>'+esc(o.code)+'</td><td>'+esc(o.name)+'<br><span class="muted">'+esc(o.wa)+'</span></td><td>'+o.qty+' × '+esc(o.item)+'<br><span class="muted">'+rp(o.total)+'</span></td><td>'+esc(o.pay)+(o.proof_path?'<br><button class="btn sm alt" data-proof="'+esc(o.proof_path)+'">Lihat bukti</button>':'<br><span class="muted">Belum ada bukti</span>')+'</td><td><span class="tag '+(o.stage?'paid':'wait')+'">'+STAGES[o.stage]+'</span><br>'+act+'</td></tr>';
+    var opts=STAGES.map(function(s,i){return '<option value="'+i+'"'+(i===o.stage?' selected':'')+'>'+s+'</option>'}).join('');
+    return '<tr><td>'+esc(o.code)+'</td><td>'+esc(o.name)+'<br><span class="muted">'+esc(o.wa)+'</span><br><span class="muted">'+esc(o.addr)+'</span></td><td>'+o.qty+' × '+esc(o.item)+'<br><span class="muted">'+rp(o.total)+'</span></td><td>'+esc(o.pay)+(o.proof_path?'<br><button class="btn sm alt" data-proof="'+esc(o.proof_path)+'">Lihat bukti</button>':'<br><span class="muted">Belum ada bukti</span>')+'</td><td><select data-stage="'+o.id+'" aria-label="Status pesanan '+esc(o.code)+'">'+opts+'</select><br><button class="btn sm alt danger" style="margin-top:6px" data-delo="'+o.id+'">Hapus</button></td></tr>';
   }).join('');
   $('a-orders').querySelectorAll('button[data-proof]').forEach(function(b){b.onclick=async function(){
     var w=window.open('','_blank');
@@ -127,11 +166,18 @@ function renderAdmin(){
     if(r.error){if(w)w.close();toast('Bukti gagal dibuka.');return}
     if(w)w.location=r.data.signedUrl;else location.href=r.data.signedUrl;
   }});
-  $('a-orders').querySelectorAll('button[data-id]').forEach(function(b){b.onclick=async function(){
-    var o=orders.filter(function(x){return x.id==b.dataset.id})[0];
-    var r=await sb.from('orders').update({stage:Math.min(4,o.stage+1)}).eq('id',o.id);
-    if(r.error){toast('Status gagal diperbarui.');return}
-    toast('Status diperbarui.');loadOrders();
+  $('a-orders').querySelectorAll('select[data-stage]').forEach(function(sel){sel.onchange=async function(){
+    var r=await sb.from('orders').update({stage:parseInt(sel.value)}).eq('id',sel.dataset.stage);
+    if(r.error){toast('Status gagal diperbarui.')}else{toast('Status diperbarui.')}
+    loadOrders();
+  }});
+  $('a-orders').querySelectorAll('button[data-delo]').forEach(function(b){b.onclick=async function(){
+    var o=orders.filter(function(x){return x.id==b.dataset.delo})[0];if(!o)return;
+    if(!confirm('Hapus pesanan '+o.code+' atas nama '+o.name+'? Tindakan ini tidak bisa dibatalkan.'))return;
+    var r=await sb.from('orders').delete().eq('id',o.id);
+    if(r.error){toast('Pesanan gagal dihapus.');return}
+    if(o.proof_path){try{await sb.storage.from('payment-proofs').remove([o.proof_path])}catch(e){}}
+    toast('Pesanan dihapus.');loadOrders();
   }});
 }
 loadProducts();checkAdmin();
