@@ -8,9 +8,9 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap">
 <style>
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
---bg:#F1F1F3;--surface:#fff;--ink:#26272b;--muted:#5f6268;--line:#d6d7db;--thumb:#e4e5e8;--veil:rgba(241,241,243,.86);--gold:#F2A900;--lotus:#D63FA0;--on-gold:#26272b;--ok:#1f8a5b}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1c1d20;--surface:#26272b;--ink:#ececee;--muted:#9a9da3;--line:#3a3c41;--thumb:#2f3135;--veil:rgba(28,29,32,.8);--ok:#4fd39a}}
-:root[data-theme="dark"]{--bg:#1c1d20;--surface:#26272b;--ink:#ececee;--muted:#9a9da3;--line:#3a3c41;--thumb:#2f3135;--veil:rgba(28,29,32,.8);--ok:#4fd39a}
+--bg:#F1F1F3;--surface:#fff;--ink:#26272b;--muted:#5f6268;--line:#d6d7db;--thumb:#e4e5e8;--veil:rgba(241,241,243,.86);--danger:#b3261e;--gold:#F2A900;--lotus:#D63FA0;--on-gold:#26272b;--ok:#1f8a5b}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1c1d20;--surface:#26272b;--ink:#ececee;--muted:#9a9da3;--line:#3a3c41;--thumb:#2f3135;--veil:rgba(28,29,32,.8);--danger:#ff8a8f;--ok:#4fd39a}}
+:root[data-theme="dark"]{--bg:#1c1d20;--surface:#26272b;--ink:#ececee;--muted:#9a9da3;--line:#3a3c41;--thumb:#2f3135;--veil:rgba(28,29,32,.8);--danger:#ff8a8f;--ok:#4fd39a}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*:before,*:after{box-sizing:inherit}
 body::before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(var(--veil),var(--veil)),url(bg.jpg) center/cover no-repeat}
@@ -37,6 +37,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .price{font-weight:600}
 .btn{background:var(--gold);color:var(--on-gold);border:0;border-radius:8px;padding:9px 14px;font:inherit;font-weight:600;cursor:pointer}
 .btn.alt{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
+.btn.danger{color:var(--danger);border-color:var(--danger)}
+.pthumb{width:48px;height:48px;object-fit:cover;border-radius:6px;display:block}
 .btn.sm{padding:5px 10px;font-size:13px}
 .card .btn{margin-top:auto}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:16px}
@@ -111,7 +113,7 @@ th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertic
   <div id="a-app" hidden>
   <p style="text-align:right;margin:0 0 8px"><button class="btn sm alt" id="a-signout">Keluar</button></p>
   <div class="panel">
-    <h2 style="margin:0">Tambah atau perbarui produk</h2>
+    <h2 style="margin:0" id="a-title">Tambah produk</h2>
     <div class="row">
       <div><label for="a-name">Nama produk</label><input id="a-name"></div>
       <div><label for="a-price">Harga (Rp)</label><input id="a-price" type="number" min="0"></div>
@@ -120,7 +122,13 @@ th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertic
       <div><label for="a-type">Jenis</label><select id="a-type"><option>Photocard</option><option>Album</option><option>Poster</option><option>Photobook</option></select></div>
       <div><label for="a-close">Tutup GO</label><input id="a-close" type="date"></div>
     </div>
-    <p><button class="btn" id="a-add">Simpan produk</button></p>
+    <label for="a-img">Foto produk</label><input id="a-img" type="file" accept="image/*">
+    <p class="muted" id="a-img-note" style="margin:4px 0 0"></p>
+    <p><button class="btn" id="a-add">Simpan produk</button> <button class="btn alt" id="a-cancel" hidden>Batal</button></p>
+  </div>
+  <div class="panel">
+    <h2 style="margin:0 0 8px">Daftar produk</h2>
+    <div class="scroll"><table><thead><tr><th>Foto</th><th>Nama</th><th>Harga</th><th>GO tutup</th><th>Aksi</th></tr></thead><tbody id="a-products"></tbody></table></div>
   </div>
   <div class="panel">
     <h2 style="margin:0 0 8px">Pesanan masuk</h2>
